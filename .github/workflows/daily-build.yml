@@ -1,0 +1,38 @@
+name: Daily Build
+
+on:
+  schedule:
+    # 9am Central during summer (CDT = UTC-5) -> 14:00 UTC
+    # Adjust if you want a different time; GitHub cron is always UTC.
+    - cron: "0 14 * * *"
+  workflow_dispatch: {} # lets you trigger it manually from the Actions tab too
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  build-next-task:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            Follow the rules in CLAUDE.md exactly. Read ROADMAP.md, find the first
+            unchecked item, and implement only that item end to end. Check the box,
+            add a DEVLOG.md entry, commit, and open a PR against main with a clear
+            title and description of what changed and why.
+          claude_args: >-
+            --model sonnet
+            --allowedTools "Read,Edit,Write,Bash(npm:*),Bash(git:*)"
+
+      # Optional: fail loudly (rather than silently) if no PR got opened,
+      # so you notice on your phone instead of finding out a week later.
+      - name: Verify a PR was opened
+        if: always()
+        run: |
+          echo "Check the Pull Requests tab if this is your first run —"
+          echo "confirm the workflow actually created one before trusting the cron."
